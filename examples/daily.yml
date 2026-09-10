@@ -27,7 +27,7 @@ jobs:
         with:
           # Load the branch tip after this run acquires the concurrency slot.
           # A queued run's event SHA may predate a prior run's state commit.
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
       - name: Choose a stable slot
         id: slot
@@ -40,10 +40,14 @@ jobs:
             echo "value=$(date -u +%F)" >> "$GITHUB_OUTPUT"
           fi
       - name: Run the job
-        run: python3 run.py --slot "${{ steps.slot.outputs.value }}"
+        env:
+          SLOT: ${{ steps.slot.outputs.value }}
+        run: python3 run.py --slot "$SLOT"
       - name: Persist the terminal record
         # A failed run can still have a started record or delivery receipt.
-        if: ${{ always() }}
+        if: ${{ always() && steps.slot.outcome == 'success' }}
+        env:
+          SLOT: ${{ steps.slot.outputs.value }}
         run: |
           if [ -z "$(git status --porcelain -- state)" ]; then
             echo "No state change: this slot was already complete."
@@ -52,6 +56,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add state
-          git commit -m "record automation slot ${{ steps.slot.outputs.value }}"
+          git commit -m "record automation slot $SLOT"
           git pull --rebase
           git push
