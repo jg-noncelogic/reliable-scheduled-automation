@@ -2,8 +2,9 @@ import io
 import json
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
-from watch_latest_run import assess_latest_run, cli, fetch_runs, workflow_runs_url
+from watch_latest_run import assess_latest_run, cli, fetch_runs, main, workflow_runs_url
 
 
 NOW = datetime(2026, 9, 10, 13, 0, tzinfo=timezone.utc)
@@ -153,6 +154,15 @@ class LatestRunAssessmentTest(unittest.TestCase):
             "exit_code": 2,
             "reason": "no_workflow_runs_found",
         })
+
+    def test_main_prints_one_json_object_per_line(self):
+        result = {"status": "healthy", "exit_code": 0}
+        output = io.StringIO()
+        with patch("watch_latest_run.cli", return_value=result), patch("sys.stdout", output):
+            self.assertEqual(main(), 0)
+        rendered = output.getvalue()
+        self.assertEqual(len(rendered.splitlines()), 1)
+        self.assertEqual(json.loads(rendered), result)
 
 
 if __name__ == "__main__":

@@ -103,7 +103,7 @@ def main() -> int:
         result = cli(sys.argv[1:])
     except Exception as exc:
         result = {"status": "error", "exit_code": 1, "error": str(exc)}
-    print(json.dumps(result, indent=2))
+    print(json.dumps(result, separators=(",", ":")))
     return result["exit_code"]
 
 
