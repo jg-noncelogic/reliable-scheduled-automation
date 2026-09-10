@@ -97,6 +97,9 @@ failure can still prevent persistence: Git at the end of a run is not a durable
 transaction around an external action. Real delivery needs destination-side
 idempotency or an appropriate durable delivery system. The local outbox below is
 a teaching simulation, not a production email/payment sender.
+The failure-safe step uses GitHub's explicit status condition; without one,
+normal steps after a failed step are skipped. See [GitHub's status-check
+reference](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
 
 The useful states are:
 
@@ -232,6 +235,10 @@ This compact design is appropriate for one low-frequency workflow and a small te
 - records contain customer data: store references and hashes, not sensitive payloads, and set retention rules.
 
 The goal is not a green dashboard. It is a job whose operator can distinguish completed, safely replayable, failed, and unknown.
+
+## Try the drill, then challenge the lesson
+
+Run the crash-and-retry drill above. If a step fails or the four-control checklist does not fit your job, [report the first unclear step or the missing control](https://github.com/jg-noncelogic/reliable-scheduled-automation/issues/1). Do not post secrets, customer data, provider payloads, or private logs. A specific no-value report is useful.
 
 ## Sources
 
