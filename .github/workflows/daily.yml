@@ -1,0 +1,52 @@
+name: daily bounded automation
+
+on:
+  schedule:
+    # Avoid the top of the hour, when scheduled Actions see higher load.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: "UTC business date to replay (YYYY-MM-DD)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+# Prevent two copies of this workflow from changing the ledger together.
+concurrency:
+  group: daily-bounded-automation
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Choose a stable slot
+        id: slot
+        env:
+          MANUAL_SLOT: ${{ inputs.slot }}
+        run: |
+          if [ -n "$MANUAL_SLOT" ]; then
+            echo "value=$MANUAL_SLOT" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run the job
+        run: python3 run.py --slot "${{ steps.slot.outputs.value }}"
+      - name: Persist the terminal record
+        run: |
+          if [ -z "$(git status --porcelain -- state)" ]; then
+            echo "No state change: this slot was already complete."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state
+          git commit -m "record automation slot ${{ steps.slot.outputs.value }}"
+          git pull --rebase
+          git push
