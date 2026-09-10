@@ -89,6 +89,15 @@ Before the side effect, write a `started` record. After it, replace that record 
 
 The included example stores one file per slot under `state/slots/`. The demonstration workflow commits those records to Git because that is transparent and adequate for one low-volume job. For many writers or high frequency, use a database with a unique constraint on `(job_name, slot)`.
 
+The workflow loads the current default branch after acquiring its concurrency
+slot, and attempts to persist state even when the job exits with an error.
+Otherwise a new runner could start from an old checkout or lose the previous
+runner's recovery record. A killed runner, failed push, or repository write-policy
+failure can still prevent persistence: Git at the end of a run is not a durable
+transaction around an external action. Real delivery needs destination-side
+idempotency or an appropriate durable delivery system. The local outbox below is
+a teaching simulation, not a production email/payment sender.
+
 The useful states are:
 
 | State | Meaning | Next action |
@@ -120,7 +129,9 @@ This repository contains:
 
 - [`run.py`](run.py): a standard-library job with atomic ledger writes;
 - [`test_run.py`](test_run.py): duplicate and crash/retry drills;
-- [`.github/workflows/daily.yml`](.github/workflows/daily.yml): schedule, manual replay, concurrency, and durable state commit.
+- [`examples/daily.yml`](examples/daily.yml): a copyable schedule, manual replay, concurrency, and durable state commit.
+
+The example workflow is intentionally outside `.github/workflows/`, so cloning this teaching repository does not start a live daily job. Copy it to `.github/workflows/daily.yml` in the repository where you want it to run.
 
 `deliver_once()` is a local outbox standing in for an external API. Replace it with your provider call, but pass `key_for(slot)` through the provider's idempotency mechanism when it has one. Keep the same key on every replay of that slot.
 
@@ -171,6 +182,12 @@ The local outbox can guarantee this because it owns an atomic create operation. 
 5. Choose an off-peak minute. The example uses `06:17 UTC` rather than the top of the hour because GitHub documents higher schedule load there.[1]
 6. In repository settings, allow GitHub Actions to read and write repository contents if you keep the Git-backed ledger.
 7. Run `workflow_dispatch` with a harmless test slot and inspect the commit and provider receipt.
+
+This example deliberately runs code and state from the current default branch,
+including manual replays. Use a separate test repository for changes. Its slot
+input must be a valid `YYYY-MM-DD` date; it is passed as data, not interpolated
+into shell source. Never put real customer payloads or secrets in this public
+example's Git-backed ledger.
 
 Scheduled workflows run from the latest commit on the default branch, and public repositories can have scheduled workflows disabled after 60 days without repository activity.[1] If missing a run matters, add a separate heartbeat monitor outside the workflow. A workflow cannot alert you that it never started.
 

@@ -25,6 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          # Load the branch tip after this run acquires the concurrency slot.
+          # A queued run's event SHA may predate a prior run's state commit.
+          ref: ${{ github.ref }}
           fetch-depth: 0
       - name: Choose a stable slot
         id: slot
@@ -39,6 +42,8 @@ jobs:
       - name: Run the job
         run: python3 run.py --slot "${{ steps.slot.outputs.value }}"
       - name: Persist the terminal record
+        # A failed run can still have a started record or delivery receipt.
+        if: ${{ always() }}
         run: |
           if [ -z "$(git status --porcelain -- state)" ]; then
             echo "No state change: this slot was already complete."

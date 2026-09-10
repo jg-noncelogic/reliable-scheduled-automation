@@ -6,7 +6,7 @@ import argparse
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 
@@ -40,6 +40,8 @@ def deliver_once(outbox: Path, key: str, payload: dict) -> str:
 
 
 def run(slot: str, state_dir: Path, fail_after_delivery: bool = False) -> dict:
+    if date.fromisoformat(slot).isoformat() != slot:
+        raise ValueError("slot must be a UTC business date in YYYY-MM-DD form")
     state_path = state_dir / "slots" / f"{slot}.json"
     if state_path.exists():
         prior = json.loads(state_path.read_text())
@@ -67,7 +69,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         print(json.dumps(run(args.slot, args.state_dir, args.fail_after_delivery), indent=2))
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:
         print(json.dumps({"status": "failed", "slot": args.slot, "error": str(exc)}, indent=2))
         return 1
     return 0

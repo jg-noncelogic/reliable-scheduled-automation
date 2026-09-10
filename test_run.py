@@ -7,6 +7,12 @@ from run import key_for, run
 
 
 class ScheduledJobTest(unittest.TestCase):
+    def test_slot_is_a_canonical_date_not_a_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for slot in ('../outside', '2026-99-10', '20260910'):
+                with self.subTest(slot=slot), self.assertRaises(ValueError):
+                    run(slot, Path(tmp))
+
     def test_same_slot_is_completed_once(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp)
