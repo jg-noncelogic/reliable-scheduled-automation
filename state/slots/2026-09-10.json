@@ -1,0 +1,8 @@
+{
+  "status": "completed",
+  "slot": "2026-09-10",
+  "started_at": "2026-09-10T11:53:51.932789Z",
+  "idempotency_key": "6273a5d09421f293ee8a6e22",
+  "completed_at": "2026-09-10T11:53:51.933182Z",
+  "delivery": "delivered"
+}
