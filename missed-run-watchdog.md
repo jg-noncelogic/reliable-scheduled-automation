@@ -25,7 +25,9 @@ Write one sentence:
 
 > `daily.yml` should create one scheduled run every 24 hours; alert when the newest scheduled run is more than 26 hours old.
 
-The two-hour margin is a policy choice, not a GitHub guarantee. Pick a margin that tolerates ordinary delay while still leaving time to replay the business slot.
+The two-hour margin is a policy choice, not a GitHub guarantee. Before using it, confirm the alert will still leave enough time to recover.
+
+**Timing caveat:** `--max-age-hours` measures from the newest run, not from the expected slot. If yesterday's 06:17 run arrived at 08:17 and today's run is missing, a 26-hour threshold cannot report `overdue` until just after 10:17, and detection occurs on the next successful monitor check. A late run arriving before that check can also erase evidence that the slot missed its deadline. If either case could miss your recovery deadline, use a slot-based alert that includes the polling interval and recovery time. [Audit a missed-run alert threshold](https://github.com/jg-noncelogic/scheduled-job-alert-budget) walks through that calculation.
 
 Monitor the named workflow and the `schedule` event. Manual replays should not reset the missed-schedule clock. GitHub's workflow-runs API accepts a workflow file name and filters including event, status, and creation time.[1]
 
